@@ -14,7 +14,14 @@ class Profile(models.Model):
 class myuploadfile(models.Model):
     user = models.ForeignKey(Profile,on_delete=models.CASCADE,null=True)
     f_name = models.CharField(max_length=255)
-    myfiles = models.FileField(upload_to="")
+    myfiles = models.FileField(upload_to='')
 
     def __str__(self):
         return self.f_name
+
+class MyModel(models.Model):
+    upload = models.FileField(upload_to='')
+# def getdata(instance, filename):
+#     return instance.user.id
+# a=getdata()
+# print(a)

@@ -13,8 +13,15 @@ from django.contrib.auth.forms import PasswordResetForm,SetPasswordForm
 from django.urls import reverse_lazy
 from .forms import FileFieldForm,PasswordsChangingForm
 from django.views.generic.edit import FormView
-
-
+from .models import MyModel
+from datetime import datetime
+import os
+import shutil
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+# gauth = GoogleAuth()
+# gauth.LocalWebserverAuth()
+# drive = GoogleDrive(gauth)
 class PasswordsChangeView(PasswordChangeView):
     form_class = PasswordsChangingForm
     success_url = reverse_lazy('password_change_done')
@@ -132,7 +139,7 @@ def Dangxuat(request):
 
 def send_mail_after_registration(email, auth_token):
     subject = 'Tài khoản của bạn cần xác thực'
-    message = f'Nhấn vào đường link này để xác thực: https://demothetich2000.herokuapp.com/verify/{auth_token}'
+    message = f'Nhấn vào đường link này để xác thực: http://127.0.0.1:8000/verify/{auth_token}'
     email_from = settings.EMAIL_HOST_USER
     recipient_list = [email]
     send_mail(subject, message, email_from, recipient_list)
@@ -145,15 +152,53 @@ def myfile(request):
     "nd":nd
     }
     return render(request, "myfile.html", context)
-
 def uploadfile(request):
     nd = Profile.objects.get(user__id=request.user.id)
+    np=myuploadfile.objects.all()
+    id=request.user.id
+    # urlk= os.path.join(datetime.today().year, datetime.today().month, datetime.today().day, id)
+    for i in np:
+        i.delete()
     if request.method == "POST":
         name = request.POST.get("filename")
         myfile = request.FILES.getlist("uploadfiles")
+        urlk= str(datetime.today().year)+ str(datetime.today().month)+ str(datetime.today().day)+str(datetime.now().hour)+str(datetime.now().minute)+str(datetime.now().second)+ str(id)
+        print(urlk)
+        Folder='./media/'+urlk
+        os.makedirs(Folder)
         for f in myfile:
             myuploadfile(f_name=name, myfiles=f,user=nd).save()
+        for f in myfile:
+            b=str(f)
+            fr='./media/'+b
+            to='./media/'+urlk
+            shutil.move(fr, to)
+        #     print(type(f))
+        entries = os.scandir(Folder)
+        f = []
+        for entry in entries:
+            print(entry.name)
+            k = str(entry.name)
+            f.append(os.path.join(Folder, k))
+        folder_name = urlk
+        folder = drive.CreateFile({'title': folder_name, 'mimeType': 'application/vnd.google-apps.folder'})
+        folder.Upload()
+        print('File ID: %s' % folder.get('id'))
+        a = str(folder.get('id'))
+        for upload_file in f:
+            gfile = drive.CreateFile({'parents': [{'id': a}]})
+            gfile.SetContentFile(upload_file)
+            gfile.Upload()  # Upload the file.
+            print('success')
         return redirect("/")
+
+
+# def uploadfile(request):
+#     if request.method == "POST":
+#         myfile = request.FILES.getlist("uploadfiles")
+#         for f in myfile:
+#             MyModel(upload=f).save()
+#         return redirect("/")
 #
 # class FileFieldView(FormView):
 #     form_class = FileFieldForm
